@@ -193,4 +193,10 @@ open failed: administratively prohibited: open failed
 
 * 多线程可以充分利用 CPU 资源，可以使得有及时的响应不至于让用户一直进行等待, 无论是在 Graphics 领域加速运算还是在Web开发中处理传来的 request 并给出相应的 response 都有很大的作用。但是在 Part2 中可以看到多线程在没有考虑互斥和同步或者考虑不当的情况下往往会出现意想不到的结果，而且难以调试。即使现在有很多多线程的库，但在使用多线程时还是要多加小心，合适处理同步和互斥。
 
+---
+
+## Part 5 Score
+
+自评分: 20
+
 

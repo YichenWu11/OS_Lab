@@ -42,8 +42,8 @@ int main() {
         {
             write(fd[WRITE_END], c1, 1);
         }
-        sleep(5);   
         lockf(fd[1],0,0);         
+        sleep(2);   
         exit(0);    
     } 
     else {
@@ -54,16 +54,21 @@ int main() {
             {
                 write(fd[WRITE_END], c2, 1);
             }
-            sleep(5); 
             lockf(fd[1],0,0); 
+            sleep(2); 
             exit(0); 
         } 
         else { /* father process */
             wait(NULL);
             lockf(fd[0],1,0);  
-            read(fd[READ_END], InPipe, BUFFER_SIZE - 1);
+            ssize_t size = read(fd[READ_END], InPipe, BUFFER_SIZE - 1);
+            if(size > 0)
+                InPipe[size] = '\0';
+            else if(size == 0)
+                printf("quit\n");
+            else
+                printf("error\n");
             lockf(fd[0],0,0);  
-            InPipe[BUFFER_SIZE - 1] = '\0';
             printf("%s\n",InPipe);
             exit(0);                        				
         } 

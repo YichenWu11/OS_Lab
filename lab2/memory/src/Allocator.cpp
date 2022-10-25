@@ -56,6 +56,7 @@ void Allocator::DelProcessAndFree(pid_t pid)
         }
     }
     ChildPidList.erase(ChildPidList.find(pid));
+    Pid2Offsets.erase(Pid2Offsets.find(pid));
 }
 
 void Allocator::NotDelProcessAndFree(pid_t pid, int offset, int size)
@@ -150,7 +151,7 @@ void Allocator::Free(pid_t pid, OffsetType Offset, OffsetType Size)
                 Pid2Offsets[pid].emplace(alloc_offset);
                 break;
             }
-            else if (Offset > allocation.first && Size == allocation.second)
+            else if (Offset > allocation.first && (Offset + Size) == (allocation.first + allocation.second))
             {
                 //  <--------------------------------------------------------->  all
                 //                   <----------------------------------------> To Free
