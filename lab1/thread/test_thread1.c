@@ -39,9 +39,9 @@ int main() {
 void *func1(void *params) {
 
     for (int _i = 0; _i < 5000; _i++) {
-        // pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&mutex);
         sum++;
-        // pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex);
     }
 
     pthread_exit(0);
@@ -49,9 +49,9 @@ void *func1(void *params) {
 
 void *func2(void *params) {
     for (int _i = 0; _i < 5000; _i++) {
-        // pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&mutex);
         sum += 2;
-        // pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex);
     }
 
     pthread_exit(0);
