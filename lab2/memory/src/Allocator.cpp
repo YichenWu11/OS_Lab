@@ -7,7 +7,7 @@ Allocator::Allocator(int capacity) : VarSizeAllocMngr(capacity) {}
 
 Allocator::~Allocator() {}
 
-int Allocator::Allocate(int size, Option option) 
+std::vector<int> Allocator::Allocate(int size, Option option) 
 {
     switch (option) {
         case Option::FF:
@@ -20,24 +20,29 @@ int Allocator::Allocate(int size, Option option)
             break;
     }
 
-    return -1;
+    return {-1};
 }
 
 int Allocator::AddProcessAndAllocate(int size, Option option)
 {
     int pid = ++source;
-    auto offset = Allocate(size, option);
-    if (offset != InvalidOffset)
+    auto offsets = Allocate(size, option);
+    if (offsets[0] != InvalidOffset)
     {
-        if (Pid2Offsets.find(pid) != Pid2Offsets.end()) Pid2Offsets[pid].emplace(offset);
+        if (Pid2Offsets.find(pid) != Pid2Offsets.end())
+        {
+            for (auto off : offsets)
+                Pid2Offsets[pid].emplace(off);
+        } 
         else
         {
             Pid2Offsets[pid] = std::set<int>();
-            Pid2Offsets[pid].emplace(offset);
+            for (auto off : offsets)
+                Pid2Offsets[pid].emplace(off);
         }
         ChildPidList.emplace(pid);
     }
-    return offset;
+    return offsets[0];
 }
 
 void Allocator::DelProcessAndFree(pid_t pid)
@@ -137,7 +142,7 @@ void Allocator::Free(pid_t pid, OffsetType Offset, OffsetType Size)
 
     for (auto &allocation : m_Allocated)
     {
-        if (Offset >= allocation.first && Size <= allocation.second)
+        if (Offset >= allocation.first && Size <= allocation.second && Offset + Size <= allocation.first + allocation.second)
         {
             if (Offset == allocation.first && Size < allocation.second)
             {

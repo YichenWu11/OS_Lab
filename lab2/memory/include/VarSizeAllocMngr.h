@@ -2,6 +2,7 @@
 
 #include <map>
 #include <deque>
+#include <vector>
 
 // The class handles free memory block management to accommodate variable-size allocation requests.
 // It keeps track of free blocks only and does not record allocation sizes. The class uses two ordered maps
@@ -62,9 +63,9 @@ public:
 
     void AddNewBlock(OffsetType Offset, OffsetType Size);
 
-    OffsetType AllocateFF(OffsetType Size);
-    OffsetType AllocateBF(OffsetType Size);
-    OffsetType AllocateWF(OffsetType Size);
+    std::vector<OffsetType> AllocateFF(OffsetType Size);
+    std::vector<OffsetType> AllocateBF(OffsetType Size);
+    std::vector<OffsetType> AllocateWF(OffsetType Size);
 
     void Free(OffsetType Offset, OffsetType Size);
 

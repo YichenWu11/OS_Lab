@@ -18,7 +18,7 @@ public:
 
     int AddProcessAndAllocate(int size, Option option = Option::BF);
 
-    int Allocate(int size, Option option = Option::BF);
+    std::vector<int> Allocate(int size, Option option = Option::BF);
 
     void NotDelProcessAndFree(pid_t pid, int offset, int size);
 
@@ -27,6 +27,8 @@ public:
     void OutputGraph();
 
     void Free(pid_t pid, OffsetType Offset, OffsetType Size);
+
+    int Extend2PowerOfTwo(int byteSize) { return (byteSize + 255) & ~255; }   
 
 private:
     // father pid : 0

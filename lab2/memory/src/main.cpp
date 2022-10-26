@@ -4,6 +4,7 @@
 #include <cassert>
 
 Allocator::Option option = Allocator::Option::BF;
+std::string algo = "BF";
 
 const int DEFAULT_MEM_SIZE = 1024;
 
@@ -30,6 +31,7 @@ int main()
 void DisplayMenu()
 {
     printf("-----------------[Menu]-----------------\n");
+    printf("------------------[%s]------------------\n", algo.c_str());
     printf("1 - Set memory size (default=%d)\n", DEFAULT_MEM_SIZE);
     printf("2 - Select memory allocation algorithm\n");
     printf("3 - New process \n");
@@ -72,9 +74,9 @@ int Run(int num)
                 int num = 0;
                 std::cout << "Enter the Num..." << std::endl;
                 std::cin >> num;
-                if (num == 1) option = Allocator::Option::FF;
-                else if (num == 2)  option = Allocator::Option::BF;
-                else if (num == 3)  option = Allocator::Option::WF;
+                if (num == 1) {option = Allocator::Option::FF; algo = "FF";}
+                else if (num == 2) {option = Allocator::Option::BF; algo = "BF";}
+                else if (num == 3) {option = Allocator::Option::WF; algo = "WF";}
                 else std::cerr << "Out of Range!!!" << std::endl;
                 break;
             }
