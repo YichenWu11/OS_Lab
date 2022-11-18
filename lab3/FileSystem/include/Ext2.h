@@ -147,11 +147,15 @@ public:
 
     // operations
     void ext2_cd(char const tar[9]);
+    void ext2_cd_impl(char const tar[9]);
+
     void ext2_mkdir(char const tar[9]);
     void ext2_rmdir(char const tar[9]);
 
     void ext2_touch(char const tar[9], FileType type = FileType::FILE);
     void ext2_rm(char const tar[9],    FileType type = FileType::FILE);
+
+    void ext2_chmod(char const tar[9]);
 
     void ext2_open(char const tar[9],  FileType type = FileType::FILE);
     void ext2_close(char const tar[9], FileType type = FileType::FILE);
@@ -178,13 +182,14 @@ private:
 
     void init_fs();
 
-    void preProcess(uint16_t tar, uint16_t len, FileType type);
+    void preProcess(uint16_t tar, uint16_t len, FileType type, std::string file_name = "");
+
+    void inputTargetProcess(std::string);
 
     std::string type2Str(FileType type);
     std::string mode2Str(uint16_t mode);
 
-// TODO: 测试阶段暂时设成public
-public:
+private:
     ext2_super_block super_block[1];
     ext2_group_desc  group_desc_table[1];  
     ext2_inode       inode_buf[1]; 

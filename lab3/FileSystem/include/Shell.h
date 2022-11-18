@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Ext2.h>
+#include <cstring>
 #include <unordered_map>
 
 enum class Command : uint16_t {

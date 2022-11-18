@@ -1,6 +1,13 @@
+#include <cstring>
+#include <stack>
+#include <vector>
+
 #include <Ext2.h>
 #include <Log.h>
-#include <cstring>
+
+/*
+
+*/
 
 /*
     type:
@@ -29,6 +36,7 @@
 
 #define FILE_R_MODE    0b0000000100000100
 #define FILE_W_MODE    0b0000000100000010
+#define FILE_X_MODE    0b0000000100000001
 #define FILE_RW_MODE   0b0000000100000110
 #define FILE_RWX_MODE  0b0000000100000111
 
@@ -320,6 +328,10 @@ void Ext2::init_fs() {
 // ***************************************************************************
 // search
 
+void Ext2::inputTargetProcess(std::string) {
+
+}
+
 // search file in current dir
 uint16_t Ext2::searchFile(
     char const tar[9], 
@@ -359,14 +371,30 @@ uint16_t Ext2::searchInTable(uint16_t inode) {
 // ext2_operations
 
 void Ext2::ext2_cd(char const tar[9]) {
+    std::string target(tar);
+    std::string space_delimiter = "/";
+    std::vector<std::string> inputs{};
+
+    size_t pos = 0;
+    while ((pos = target.find(space_delimiter)) != std::string::npos) {
+        inputs.push_back(target.substr(0, pos));
+        target.erase(0, pos + space_delimiter.length());
+    }
+    inputs.push_back(target.substr(0, pos));
+
+    for (auto &ele : inputs)
+        ext2_cd_impl(ele.data());
+}
+
+void Ext2::ext2_cd_impl(char const tar[9]) {
     uint16_t inode_idx, block_idx, dir_idx, is_find;
 
     is_find = searchFile(tar, 2, inode_idx, block_idx, dir_idx);
 
     if(is_find) {
         current_dir = inode_idx;
-        // case 1 : .. 而且现在不是根目录  ---> 根目录的 . 的 name_len 是 0
-        if (!strcmp(tar, "..") && dir_buf[dir_idx - 1].name_len) {
+        // case 1 : 
+        if (!strcmp(tar, "..") && dir_buf[dir_idx - 1].name_len && dir_buf[dir_idx - 1].inode) {
             current_path[strlen(current_path) - dir_buf[dir_idx - 1].name_len - 1] = '\0';
             current_dirlen = dir_buf[dir_idx].name_len;
         }
@@ -383,10 +411,10 @@ void Ext2::ext2_cd(char const tar[9]) {
     }
     else {
     	WARN("directory not exsit!!!\n");
-    }
+    }    
 }
 
-void Ext2::preProcess(uint16_t tar_node, uint16_t len, FileType type) {
+void Ext2::preProcess(uint16_t tar_node, uint16_t len, FileType type, std::string file_name) {
     loadInode(tar_node);
 
     if(type == FileType::DIR) {
@@ -410,6 +438,7 @@ void Ext2::preProcess(uint16_t tar_node, uint16_t len, FileType type) {
 
         updateDirDataBlock(inode_buf[0].i_block[0]);
 
+        // 目录的权限默认为 可读可写
         inode_buf[0].i_mode = DIR_RW_MODE;
     }
     else {
@@ -421,8 +450,21 @@ void Ext2::preProcess(uint16_t tar_node, uint16_t len, FileType type) {
         inode_buf[0].i_ctime = 0;   	
         inode_buf[0].i_mtime = 0;   	
         inode_buf[0].i_dtime = 0;
-        // FIXME: 修改为可以设置文件的读写权限，目前默认为 RWX
-        inode_buf[0].i_mode   = FILE_RWX_MODE;
+        // 根据文件后缀设置 mode
+        size_t pos = 0;
+        pos = file_name.find(".");
+        if (pos == std::string::npos) {
+            inode_buf[0].i_mode = FILE_X_MODE;
+        }
+        else {
+            file_name.erase(0, pos + 1);
+            if (file_name == "txt" || file_name == "md")
+                inode_buf[0].i_mode = FILE_RW_MODE;
+            else if (file_name == "exe")
+                inode_buf[0].i_mode = FILE_X_MODE;
+            else
+                inode_buf[0].i_mode = FILE_R_MODE;
+        }
     }
 
     updateInode(tar_node);
@@ -445,7 +487,7 @@ void Ext2::ext2_mkdir(char const tar[9]) {
             while(flag && idx1 < inode_buf[0].i_blocks)
             {
                 loadDirDataBlock(inode_buf[0].i_block[idx1]);
-                // FIXME: 从 2 开始是因为根目录下 . 和 .. 的根目录 inode 为 0
+                // 从 2 开始是因为根目录下 . 和 .. 的根目录 inode 为 0
                 idx2 = 2;
                 while (idx2 < DIR_ENTRY_NUM_PER_BLOCK)
                 {
@@ -491,6 +533,7 @@ void Ext2::ext2_mkdir(char const tar[9]) {
         updateInode(current_dir);
         
         preProcess(tar_node, strlen(tar), FileType::DIR);
+        INFO("Dir Create Success!!!\n");
     }
     else {
         WARN("Directory has alloady existed!\n");
@@ -530,7 +573,7 @@ void Ext2::ext2_rmdir(char const tar[9]) {
                 loadDirDataBlock(inode_buf[0].i_block[m]);
                 int empty_num = 0;
                 for (int n = 0; n < DIR_ENTRY_NUM_PER_BLOCK; ++n) 
-                    if (!dir_buf[n].inode) ++empty_num;
+                    if (!dir_buf[n].inode && !dir_buf[n].name_len) ++empty_num;
 
                 if (empty_num == DIR_ENTRY_NUM_PER_BLOCK) {
                     freeDataBlock(inode_buf[0].i_block[m]);
@@ -542,11 +585,14 @@ void Ext2::ext2_rmdir(char const tar[9]) {
             }
 
             updateInode(current_dir);
+            INFO("Remove Dir Success!!!\n");
             return;
         }
         else {
             int tmp = current_dir;
-            for (int i = 0; i < inode_buf[0].i_blocks; ++i) {
+            int i;
+            i = (current_dir == 0) ? 2 : 0;
+            for (; i < inode_buf[0].i_blocks; ++i) {
                 loadDirDataBlock(inode_buf[0].i_block[i]);
                 for(int m = 0; m < DIR_ENTRY_NUM_PER_BLOCK; ++m)
                 {
@@ -571,6 +617,7 @@ void Ext2::ext2_rmdir(char const tar[9]) {
                 }
             }
             current_dir = tmp;
+            INFO("Remove Dir Success!!!\n");
             return;
         }   
     }
@@ -628,7 +675,7 @@ void Ext2::ext2_touch(char const tar[9], FileType type) {
         inode_buf[0].i_size += DIR_ENTRY_SIZE;  // a new dir_entry
         updateInode(current_dir);
         
-        preProcess(tar_node, strlen(tar), type);
+        preProcess(tar_node, strlen(tar), type, tar);
 
         INFO("File Touch Success!!!\n");
     }
@@ -678,6 +725,7 @@ void Ext2::ext2_rm(char const tar[9], FileType type) {
             }
         }
         updateInode(current_dir);
+        INFO("Remove File Success!!!\n");
     }
     else {
         WARN("This file does not exsit!!!\n");
@@ -833,7 +881,7 @@ void Ext2::ext2_write(char const tar[9]) {
         updateInode(node_idx);
     }
     else {
-        WARN("Write this file is not allowed!!!\n");
+        WARN("Write to this file is not allowed!!!\n");
     }
 }
 
@@ -922,6 +970,11 @@ void Ext2::ext2_l_open_file() {
         INFO(" ");
     }
     INFO("\n");
+}
+
+// TODO: Impl chmod
+void Ext2::ext2_chmod(char const tar[9]) {
+
 }
 
 // ***************************************************************************

@@ -162,7 +162,5 @@ void Shell::run() {
             default:
                 break;
         }
-
     }
-
 }
