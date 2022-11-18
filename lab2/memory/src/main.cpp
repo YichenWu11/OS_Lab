@@ -3,10 +3,10 @@
 #include <unistd.h>
 #include <cassert>
 
-std::string info = std::string("\033[0m\033[1;32m[info]\033[0m");
-std::string opt = std::string("\033[0m\033[1;32m[option]\033[0m");
-std::string error = std::string("\033[0m\033[1;31m[error]\033[0m");
-std::string warning = std::string("\033[0m\033[1;33m[warning]\033[0m");
+std::string info = std::string("\033[0m\033[1;32m[info] \033[0m");
+std::string opt = std::string("\033[0m\033[1;32m[option] \033[0m");
+std::string error = std::string("\033[0m\033[1;31m[error] \033[0m");
+std::string warning = std::string("\033[0m\033[1;33m[warning] \033[0m");
 
 Allocator::Option option = Allocator::Option::BF;
 std::string algo = "BF";
@@ -21,6 +21,8 @@ int Run(int num);
 int main()
 {
     int operation = 0;
+
+    system("clear");
 
     while (true)
     {
@@ -57,14 +59,14 @@ int Run(int num)
             if (!alloc)
             {
                 int size = 0;
-                std::cout << info << " Enter the value of size..." << std::endl;
+                std::cout << info << "Enter the value of size..." << std::endl;
                 std::cin >> size;
                 assert(size > 0);
                 alloc = new Allocator(size);
             }
             else
             {
-                std::cerr << warning << " Alloc has been Initilized!!!" << std::endl;
+                std::cerr << warning << "Alloc has been Initilized!!!" << std::endl;
             }
             break;
         }
@@ -72,42 +74,47 @@ int Run(int num)
             {
                 if (!alloc) 
                 {
-                    std::cerr << warning << " Initilize the allocator first!!!" << std::endl;
+                    std::cerr << warning << "Initilize the allocator first!!!" << std::endl;
                     break;
                 };
-                std::cout << opt << " 1: FF  2: BF  3: WF" << std::endl;
+                std::cout << opt << "1: FF  2: BF  3: WF" << std::endl;
                 int num = 0;
-                std::cout << info << " Enter the Num..." << std::endl;
+                std::cout << info << "Enter the Num..." << std::endl;
                 std::cin >> num;
                 if (num == 1) {option = Allocator::Option::FF; algo = "FF";}
                 else if (num == 2) {option = Allocator::Option::BF; algo = "BF";}
                 else if (num == 3) {option = Allocator::Option::WF; algo = "WF";}
-                else std::cerr << error << " Out of Range!!!" << std::endl;
+                else std::cerr << error << "Out of Range!!!" << std::endl;
                 break;
             }
         case 3:
             {
                 if (!alloc) 
                 {
-                    std::cerr << warning << " Initilize the allocator first!!!" << std::endl;
+                    std::cerr << warning << "Initilize the allocator first!!!" << std::endl;
                     break;
                 };
                 int size = 1;
-                std::cout << info << " Enter the Size of the new Process..." << std::endl;
+                std::cout << info << "Enter the Size of the new Process..." << std::endl;
                 std::cin >> size;
+                if (size == 0)
+                {
+                    std::cerr << error << "Size can not be zero!!!" << std::endl;
+                    break;
+                }
                 int res = alloc->AddProcessAndAllocate(size, option);
-                if (res == -1) std::cerr << error << " Allocate Failed!!!" << std::endl;
+                if (res == -1) std::cerr << error << "Allocate Failed!!!" << std::endl;
                 break;        
             }
         case 4:
             {
                 if (!alloc) 
                 {
-                    std::cerr << warning << " Initilize the allocator first!!!" << std::endl;
+                    std::cerr << warning << "Initilize the allocator first!!!" << std::endl;
                     break;
                 };
                 int pid = 1;
-                std::cout << info << " Enter the Pid of the selected Process..." << std::endl;
+                std::cout << info << "Enter the Pid of the selected Process..." << std::endl;
                 std::cin >> pid;
                 assert(pid > 0);
                 alloc->DelProcessAndFree(pid);
@@ -117,17 +124,17 @@ int Run(int num)
             {
                 if (!alloc) 
                 {
-                    std::cerr << info << " Initilize the allocator first!!!" << std::endl;
+                    std::cerr << info << "Initilize the allocator first!!!" << std::endl;
                     break;
                 };
                 int pid = 0;
                 int offset = 0;
                 int size = 0;
-                std::cout << info << " Enter the Pid, Offset, Size in order..." << std::endl;
+                std::cout << info << "Enter the Pid, Offset, Size in order..." << std::endl;
                 std::cin >> pid >> offset >> size;
                 if (pid == 0 || size == 0)
                 {
-                    std::cerr << error << " Input Error" << std::endl;
+                    std::cerr << error << "Input Error" << std::endl;
                     break;
                 }
                 alloc->NotDelProcessAndFree(pid, offset, size);
@@ -137,7 +144,7 @@ int Run(int num)
             {
                 if (!alloc) 
                 {
-                    std::cerr << warning << " Initilize the allocator first!!!" << std::endl;
+                    std::cerr << warning << "Initilize the allocator first!!!" << std::endl;
                     break;
                 };
                 alloc->OutputGraph();
@@ -148,7 +155,7 @@ int Run(int num)
         default:
             break;
     }
-    std::cout << info << " Enter c To Continue......" << std::endl;
+    std::cout << info << "Enter c To Continue......" << std::endl;
     while (ignore != std::string("c"))
         std::cin >> ignore;
     system("clear");
