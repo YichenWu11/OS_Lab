@@ -57,7 +57,5 @@ private:
 private:
     bool is_init{false};
 
-    std::set<uint8_t> params;
-
     std::unordered_map<std::string, Command> input2command;
 };

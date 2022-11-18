@@ -29,7 +29,8 @@ void Shell::constructMap() {
     input2command["lld"]    = Command::SHOW_DISK_INFO; // ll -d
     input2command["help"]   = Command::HELP;    // help
     input2command["clear"]  = Command::CLEAR;   // clear
-    input2command["exit"]   = Command::EXIT;    // clear
+    input2command["exit"]   = Command::EXIT;    // exit
+    input2command["quit"]   = Command::EXIT;    // quit
 }
 
 Pack Shell::inputProcess(std::string input) {
@@ -48,9 +49,12 @@ Pack Shell::inputProcess(std::string input) {
     std::string process_input;
     if (inputs.size() == 3) 
         process_input = inputs[0] + inputs[1].substr(1,1);
-    else if (inputs.size() == 2 && inputs[0] == "ll")
-        process_input = inputs[0] + inputs[1].substr(1,1);
-    else
+    else if (inputs.size() == 2)
+        if (inputs[1][0] == '-')
+            process_input = inputs[0] + inputs[1].substr(1,1);
+        else 
+            process_input = inputs[0];
+    else if (inputs.size() == 1)
         process_input = inputs[0];
 
     Pack res;
@@ -58,10 +62,11 @@ Pack Shell::inputProcess(std::string input) {
     if (input2command.find(process_input) != input2command.end()) {
         res.command  = input2command[process_input];
         res.is_valid = true;
-        if (inputs.size() > 2)
+        if (inputs.size() == 3)
             strncpy(&(res.target[0]), inputs[2].data(), inputs[2].length());
-        else if (inputs.size() == 2 && inputs[0] != "ll")
-            strncpy(&(res.target[0]), inputs[1].data(), inputs[1].length());
+        else if (inputs.size() == 2)
+            if (inputs[1][0] != '-')
+                strncpy(&(res.target[0]), inputs[1].data(), inputs[1].length());
     }
     else {
         res.is_valid = false;
