@@ -188,7 +188,7 @@ private:
 
     std::string type2Str(FileType type);
     std::string mode2Str(uint16_t mode);
-
+    int         calcDirSize(uint16_t inode);
 private:
     ext2_super_block super_block[1];
     ext2_group_desc  group_desc_table[1];  

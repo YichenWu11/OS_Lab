@@ -249,7 +249,7 @@ void   Ext2::freeInode(size_t idx) {
 
 void Ext2::init() {
     memset(&file_open_table,  0, sizeof(file_open_table));
-    strcpy(current_path, "[path: /");
+    strcpy(current_path, "[yichenwu11@path: /");
     loadSuperBlock();
     if(strcmp(super_block[0].sb_volume_name, VOLUME_NAME)) {
         init_fs();
@@ -921,20 +921,51 @@ std::string Ext2::mode2Str(uint16_t mode) {
     return res;
 }
 
+int Ext2::calcDirSize(uint16_t inode) {
+    int res = 0;
+    loadInode(inode);
+    int blocks = inode_buf[0].i_blocks;
+
+    res += inode_buf[0].i_blocks * BLOCK_SIZE;
+
+    for (int idx = 0; idx < blocks; ++idx) {
+        loadDirDataBlock(inode_buf[0].i_block[idx]);
+        for (int jdx = 2; jdx < DIR_ENTRY_NUM_PER_BLOCK; ++jdx) {
+            if (dir_buf[jdx].name_len) {
+                if (dir_buf[jdx].file_type == static_cast<uint8_t>(FileType::DIR)) {
+                    res += calcDirSize(dir_buf[jdx].inode);
+                }
+                else {
+                    loadInode(dir_buf[jdx].inode);
+                    res += inode_buf[0].i_blocks * BLOCK_SIZE;
+                }
+            }
+        }
+    }
+    return res;
+}
+
 void Ext2::ext2_ll() {
     uint16_t inode_idx, b_idx = 0, d_idx;
     loadInode(current_dir);
-    while (b_idx < inode_buf[0].i_blocks) {
-        loadDirDataBlock(inode_buf[0].i_block[b_idx]);
+    int blocks = inode_buf[0].i_blocks;
+    while (b_idx < blocks) {
+        uint16_t tatget_dir = inode_buf[0].i_block[b_idx];
+        loadDirDataBlock(tatget_dir);
         d_idx = 0;
         while (d_idx < DIR_ENTRY_NUM_PER_BLOCK) {
+            loadDirDataBlock(tatget_dir);
             if (d_idx < 2 || dir_buf[d_idx].name_len) {
-                // TODO: 目录的大小要递归计算其下的所有大小之和
                 loadInode(dir_buf[d_idx].inode);
                 printf("\033[0m\033[1;32m%-9s \033[0m", dir_buf[d_idx].name);
                 printf("\033[0m\033[1;32m%-7s \033[0m", type2Str(FileType(dir_buf[d_idx].file_type)).c_str());
                 printf("\033[0m\033[1;32m%-5s \033[0m", mode2Str(inode_buf[0].i_mode).c_str());
-                printf("\033[0m\033[1;32m%dB\n\033[0m", inode_buf[0].i_blocks * BLOCK_SIZE);
+                if (dir_buf[d_idx].file_type == static_cast<uint8_t>(FileType::DIR)) {
+                    printf("\033[0m\033[1;32m%dB\n\033[0m", calcDirSize(dir_buf[d_idx].inode));
+                }
+                else {
+                    printf("\033[0m\033[1;32m%dB\n\033[0m", inode_buf[0].i_blocks * BLOCK_SIZE);
+                }
             }
             ++d_idx;
         }
@@ -988,6 +1019,6 @@ void Ext2::showDiskInfo() {
 }
 
 void Ext2::printCurrPath() {
-    printf("%s]\n", Ext2::GetInstance().current_path);
+    printf("\033[0m\033[3;38m%s]\n\033[0m", Ext2::GetInstance().current_path);
     INFO("> ");
 }
