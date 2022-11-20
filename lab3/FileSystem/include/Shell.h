@@ -18,6 +18,7 @@ enum class Command : uint16_t {
     LS,
     LL,
     LS_OPEN_FILE,
+    CHMOD,
     SHOW_DISK_INFO,
     HELP,
     CLEAR,

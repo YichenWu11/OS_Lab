@@ -155,7 +155,8 @@ public:
     void ext2_touch(char const tar[9], FileType type = FileType::FILE);
     void ext2_rm(char const tar[9],    FileType type = FileType::FILE);
 
-    void ext2_chmod(char const tar[9]);
+    void ext2_chmod(char const tar[9], std::string mode);
+    void ext2_chmod_impl(char const tar[9], uint16_t mode);
 
     void ext2_open(char const tar[9],  FileType type = FileType::FILE);
     void ext2_close(char const tar[9], FileType type = FileType::FILE);

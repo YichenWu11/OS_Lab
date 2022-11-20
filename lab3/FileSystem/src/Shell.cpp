@@ -27,6 +27,10 @@ void Shell::constructMap() {
     input2command["ll"]     = Command::LL;      // ll
     input2command["llo"]    = Command::LS_OPEN_FILE;   // ll -o
     input2command["lld"]    = Command::SHOW_DISK_INFO; // ll -d
+
+    // TODO
+    input2command["chmod"]  = Command::CHMOD;   // chmod -rwx xxx
+
     input2command["help"]   = Command::HELP;    // help
     input2command["clear"]  = Command::CLEAR;   // clear
     input2command["exit"]   = Command::EXIT;    // exit

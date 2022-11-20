@@ -828,6 +828,8 @@ void Ext2::ext2_write(char const tar[9]) {
         size_t tmp_idx = 0;
         std::string tmp;
 
+        INFO("Input `$$` to end: \n\n");
+
         char is_end[2];
 
         while(1) {
@@ -1003,9 +1005,43 @@ void Ext2::ext2_l_open_file() {
     INFO("\n");
 }
 
-// TODO: Impl chmod
-void Ext2::ext2_chmod(char const tar[9]) {
+void Ext2::ext2_chmod(char const tar[9], std::string mode) {
+    uint16_t output = 0b0000000100000000;
+    if (mode.length() > 3)
+        ERROR("Mode Input Error!!! Please check your input!!!\n");
+    for (int i = 0; i < mode.length(); ++i) {
+        if (mode[i] == 'r') {
+            output = output | 0b0000000100000100;
+        }
+        else if (mode[i] == 'w') {
+            output = output | 0b0000000100000010;
+        }
+        else if (mode[i] == 'x') {
+            output = output | 0b0000000100000001;
+        }
+        else if (mode[i] == '_') {
+            // do nothing
+        }
+        else {
+            ERROR("Mode Input Error!!! Please check your input!!!\n");
+        }
+    }
+    ext2_chmod_impl(tar, output);
+}
 
+
+void Ext2::ext2_chmod_impl(char const tar[9], uint16_t mode) {
+    uint16_t inode_idx, block_idx, dir_idx;
+
+    if (searchFile(tar, static_cast<uint8_t>(FileType::FILE), inode_idx, block_idx, dir_idx)) {
+        loadInode(inode_idx);
+        inode_buf[0].i_mode = mode;
+        updateInode(inode_idx);
+        INFO("Success!!!\n");
+    }
+    else {
+        WARN("This file does not exsit!!!\n");
+    }    
 }
 
 // ***************************************************************************
