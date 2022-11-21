@@ -134,6 +134,14 @@ public:
     void updateDataBlock(size_t idx);
     void loadDataBlock(size_t idx);
 
+    // load/update of level1_index_block_buf
+    void updateIndexBlock_Level1(size_t idx);
+    void loadIndexBlock_Level1(size_t idx);
+
+    // load/update of level2_index_block_buf
+    void updateIndexBlock_Level2(size_t idx);
+    void loadIndexBlock_Level2(size_t idx);
+
     // alloc and free
     size_t allocDataBlock();
     void   freeDataBlock(size_t idx);
@@ -155,7 +163,7 @@ public:
     void ext2_touch(char const tar[9], FileType type = FileType::FILE);
     void ext2_rm(char const tar[9],    FileType type = FileType::FILE);
 
-    void ext2_chmod(char const tar[9], std::string mode);
+    void ext2_chmod(char const tar[9]);
     void ext2_chmod_impl(char const tar[9], uint16_t mode);
 
     void ext2_open(char const tar[9],  FileType type = FileType::FILE);
@@ -200,8 +208,10 @@ private:
     char             data_buf[BLOCK_SIZE];
 
     uint16_t        file_open_table[FOPEN_TABLE_MAX]; 
-    std::set<std::string> file_open_name_set;      
-        
+    std::set<std::string> file_open_name_set;   
+
+    uint16_t          level1_index_block_buf[32];   // 一级间接索引 
+    uint16_t          level2_index_block_buf[32];   // 二级间接索引
 
     FILE *fp;  // 用文件来模拟磁盘空间
 

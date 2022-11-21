@@ -28,8 +28,7 @@ void Shell::constructMap() {
     input2command["llo"]    = Command::LS_OPEN_FILE;   // ll -o
     input2command["lld"]    = Command::SHOW_DISK_INFO; // ll -d
 
-    // TODO
-    input2command["chmod"]  = Command::CHMOD;   // chmod -rwx xxx
+    input2command["chmod"]  = Command::CHMOD;   // chmod xxx
 
     input2command["help"]   = Command::HELP;    // help
     input2command["clear"]  = Command::CLEAR;   // clear
@@ -63,18 +62,32 @@ Pack Shell::inputProcess(std::string input) {
 
     Pack res;
 
+    
+
     if (input2command.find(process_input) != input2command.end()) {
         res.command  = input2command[process_input];
         res.is_valid = true;
-        if (inputs.size() == 3)
-            strncpy(&(res.target[0]), inputs[2].data(), inputs[2].length());
+        if (inputs.size() == 3) {
+            if (inputs[2].length() <= 9) strncpy(&(res.target[0]), inputs[2].data(), inputs[2].length());
+            else {
+                res.is_valid = false;
+                ERROR("The max length of name of file/dir is 9!!!\n");
+            }
+        }
         else if (inputs.size() == 2)
-            if (inputs[1][0] != '-')
-                strncpy(&(res.target[0]), inputs[1].data(), inputs[1].length());
+            if (inputs[1][0] != '-') {
+                if (inputs[1].length() <= 9) strncpy(&(res.target[0]), inputs[1].data(), inputs[1].length());
+                else {
+                    res.is_valid = false;
+                    ERROR("The max length of name of file/dir is 9!!!\n");
+                }
+            }
     }
     else {
         res.is_valid = false;
     }
+
+    
     
     return res;
 }
@@ -91,6 +104,7 @@ void Shell::help() {
     INFO("write [-a]  xxx : delete original content then write(without -a) // Append write(with -a)\n");
     INFO("ls    [--]      : list the contents in current didirectoryr\n");
     INFO("ll    [-od]     : list details // show disk info(with -d) // list file open table(with -o)\n");
+    INFO("chmod [--]  xxx : change the mode of the file\n");
     INFO("clear [--]      : clear\n");
     INFO("exit  [--]      : exit\n");
     INFO("----------------- command --------------------\n\n");
@@ -155,6 +169,9 @@ void Shell::run() {
                 break;
             case Command::LS_OPEN_FILE:
                 Ext2::GetInstance().ext2_l_open_file();
+                break;
+            case Command::CHMOD:
+                Ext2::GetInstance().ext2_chmod(res.target);
                 break;
             case Command::SHOW_DISK_INFO:
                 Ext2::GetInstance().showDiskInfo();

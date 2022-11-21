@@ -135,6 +135,31 @@ void Ext2::loadDirDataBlock(size_t idx) {
     fread(dir_buf, BLOCK_SIZE, 1, fp);
 }
 
+// load/update of level1_index_block_buf
+void Ext2::updateIndexBlock_Level1(size_t idx) {
+    fseek(fp, DATA_BLOCK_START_ADDR+idx*BLOCK_SIZE, SEEK_SET);
+    fwrite(level1_index_block_buf, BLOCK_SIZE, 1, fp);
+    fflush(fp);
+}
+
+void Ext2::loadIndexBlock_Level1(size_t idx) {
+    fseek(fp, DATA_BLOCK_START_ADDR+idx*BLOCK_SIZE, SEEK_SET);
+    fread(level1_index_block_buf, BLOCK_SIZE, 1, fp);
+}
+
+
+// load/update of level2_index_block_buf
+void Ext2::updateIndexBlock_Level2(size_t idx) {
+    fseek(fp, DATA_BLOCK_START_ADDR+idx*BLOCK_SIZE, SEEK_SET);
+    fwrite(level2_index_block_buf, BLOCK_SIZE, 1, fp);
+    fflush(fp);
+}
+
+void Ext2::loadIndexBlock_Level2(size_t idx) {
+    fseek(fp, DATA_BLOCK_START_ADDR+idx*BLOCK_SIZE, SEEK_SET);
+    fread(level2_index_block_buf, BLOCK_SIZE, 1, fp);
+}
+
 // ***************************************************************************
 
 
@@ -794,22 +819,65 @@ void Ext2::ext2_read(char const tar[9]) {
             WARN("This file is empty!!!\n");
             return;
         }
-        for (int i = 0; i < inode_buf[0].i_blocks; ++i) {
-            // TODO: 增加一级间接和二级间接
-            loadDataBlock(inode_buf[0].i_block[i]);
-            for (int j = 0; j < BLOCK_SIZE; ++j) {
-                if (data_buf[j] == '\0') break;
-                printf("%c", data_buf[j]);
+
+        bool is_level1_use = inode_buf[0].i_blocks >= 7;
+        bool is_level2_use = inode_buf[0].i_blocks >= 8;
+
+        if (is_level1_use) {
+            // 0 ----- 5 (6 个直接索引的数据块)
+            for (int i = 0; i < 6; ++i) {
+                loadDataBlock(inode_buf[0].i_block[i]);
+                for (int j = 0; j < BLOCK_SIZE; ++j) {
+                    if (data_buf[j] == '\0') break;
+                    printf("%c", data_buf[j]);
+                }
+            }
+            // 6 ----> 一级间接索引的数据块
+            loadIndexBlock_Level1(inode_buf[0].i_block[6]);
+            for (int i = 0; i < 32; ++i) {
+                loadDataBlock(level1_index_block_buf[i]);
+                for (int j = 0; j < BLOCK_SIZE; ++j) {
+                    if (data_buf[j] == '\0') break;
+                    printf("%c", data_buf[j]);
+                }
+            }
+
+            // 如果存在二级间接索引
+            if (is_level2_use) {
+                // 7 ----> 二级间接索引的数据块
+                loadIndexBlock_Level2(inode_buf[0].i_block[7]);
+                for (int i = 0; i < 32; ++i) {
+                    loadIndexBlock_Level1(level2_index_block_buf[i]);
+                    for (int j = 0; j < 32; ++j) {
+                        loadDataBlock(level1_index_block_buf[j]);
+                        for (int k = 0; k < BLOCK_SIZE; ++k) {
+                            if (data_buf[k] == '\0') break;
+                            printf("%c", data_buf[k]);
+                        }
+                    }
+                }
+            }
+            else {
+                printf("\n");
             }
         }
-        printf("\n");
+        else {
+            for (int i = 0; i < inode_buf[0].i_blocks; ++i) {
+                loadDataBlock(inode_buf[0].i_block[i]);
+                for (int j = 0; j < BLOCK_SIZE; ++j) {
+                    if (data_buf[j] == '\0') break;
+                    printf("%c", data_buf[j]);
+                }
+            }
+            printf("\n");
+        }
     }
     else {
         WARN("Read this file is not allowed!!!\n");
     }
 }
 
-// 覆盖
+// 覆盖写入
 void Ext2::ext2_write(char const tar[9]) {
     uint16_t node_idx, block_idx, dir_idx;
     if (!searchFile(tar, 1, node_idx, block_idx, dir_idx)) {
@@ -854,30 +922,148 @@ void Ext2::ext2_write(char const tar[9]) {
         int need_block_num = 
             (tmp.length() % BLOCK_SIZE) ?  (tmp.length() / BLOCK_SIZE + 1) : (tmp.length() / BLOCK_SIZE);
 
-        // TODO: 加上一级间接和二级间接后这里需要更改
-        assert(need_block_num <= 8);
-        // alloc
-        if (need_block_num > inode_buf[0].i_blocks) {
-            for (int i = inode_buf[0].i_blocks; i < need_block_num; ++i) {
-                inode_buf[0].i_block[i] = allocDataBlock();
-                inode_buf[0].i_blocks++;
+        // free first
+        bool is_level1_use = inode_buf[0].i_blocks >= 7;
+        bool is_level2_use = inode_buf[0].i_blocks >= 8;
+
+        if (is_level1_use) {
+            // free direct
+            for (int i = 0; i < 6; ++i) 
+                freeDataBlock(inode_buf[0].i_block[i]);
+            loadIndexBlock_Level1(inode_buf[0].i_block[6]);
+            for (int i = 0; i < 32; ++i) 
+                freeDataBlock(level1_index_block_buf[i]);
+            
+            if (is_level2_use) {
+                loadIndexBlock_Level2(inode_buf[0].i_block[7]);
+                for (int i = 0; i < 32; ++i) {
+                    loadIndexBlock_Level1(level2_index_block_buf[i]);
+                    for (int j = 0; j < 32; ++j) 
+                        freeDataBlock(level1_index_block_buf[j]);
+                }
             }
         }
-        else if (need_block_num < inode_buf[0].i_blocks) {
-            for (int i = inode_buf[0].i_blocks - 1; i >= need_block_num; --i) {
+        else {
+            for (int i = 0; i < inode_buf[0].i_blocks; ++i) 
                 freeDataBlock(inode_buf[0].i_block[i]);
-                inode_buf[0].i_blocks--;
-            }            
         }
 
-        // write to data_block
-        for (int i = 0; i < inode_buf[0].i_blocks; ++i) {
-            loadDataBlock(inode_buf[0].i_block[i]);
-            if (i == inode_buf[0].i_blocks - 1)
-                memcpy(data_buf, tmp.data()+i*BLOCK_SIZE, tmp.length()-i*BLOCK_SIZE);
-            else    
-                memcpy(data_buf, tmp.data()+i*BLOCK_SIZE, BLOCK_SIZE);
-            updateDataBlock(inode_buf[0].i_block[i]);
+        inode_buf[0].i_blocks = need_block_num;
+
+        bool is_level1_need = need_block_num >= (6  + 1);
+        bool is_level2_need = need_block_num >= (38 + 1);
+
+        if (is_level1_need) {
+            memset(&level1_index_block_buf, 0, sizeof(level1_index_block_buf));
+            // alloc
+            for (int i = 0; i < 7; ++i)
+                inode_buf[0].i_block[i] = allocDataBlock();
+            need_block_num -= 6;
+            int to_alloc_num = (is_level2_need) ? 32 : need_block_num;
+            for (int i = 0; i < to_alloc_num; ++i) {
+                level1_index_block_buf[i] = allocDataBlock();
+            }
+            updateIndexBlock_Level1(inode_buf[0].i_block[6]);
+            need_block_num -= to_alloc_num;
+            
+            if (is_level2_need) {
+                memset(&level2_index_block_buf, 0, sizeof(level2_index_block_buf));
+
+                // alloc
+                inode_buf[0].i_block[7] = allocDataBlock();
+
+                int to_alloc_level2_num = need_block_num / 32 + 1;
+
+                for (int i = 0; i < to_alloc_level2_num; ++i) {
+                    level2_index_block_buf[i] = allocDataBlock();
+                    int to_alloc_blk_num = (need_block_num <= 32) ? need_block_num : 32;
+                    loadIndexBlock_Level1(level2_index_block_buf[i]);
+                    for (int j = 0; j <= need_block_num; ++j) {
+                        level1_index_block_buf[j] = allocDataBlock();
+                        need_block_num--;
+                    }
+                    updateIndexBlock_Level1(level2_index_block_buf[i]);
+                }
+                updateIndexBlock_Level2(inode_buf[0].i_block[7]);
+
+                // write (需要一级间接和二级间接索引)
+
+                // 直接和一级间接部分
+                int glo_idx = 0;
+                for (int i = 0; i < 6; ++i) {
+                    loadDataBlock(inode_buf[0].i_block[i]);
+                    memcpy(data_buf, tmp.data()+glo_idx*BLOCK_SIZE, BLOCK_SIZE);
+                    updateDataBlock(inode_buf[0].i_block[i]);
+                    ++glo_idx;
+                }
+                loadIndexBlock_Level1(inode_buf[0].i_block[6]);
+                for (int i = 0; i < 32; ++i) {
+                    loadDataBlock(level1_index_block_buf[i]);
+                    memcpy(data_buf, tmp.data()+glo_idx*BLOCK_SIZE, BLOCK_SIZE);
+                    updateDataBlock(level1_index_block_buf[i]);
+                    ++glo_idx;
+                }
+                updateIndexBlock_Level1(inode_buf[0].i_block[6]);
+
+                // 二级间接部分
+                loadIndexBlock_Level2(inode_buf[0].i_block[7]);
+                for (int i = 0; i < 32; ++i) {
+                    if (!level2_index_block_buf[i]) {
+                        loadIndexBlock_Level1(level2_index_block_buf[i]);
+                        for (int j = 0; j < 32; ++j) {
+                            if (!level1_index_block_buf[i]) {
+                                if (j == 31 || !level1_index_block_buf[j+1])
+                                    memcpy(data_buf, tmp.data()+glo_idx*BLOCK_SIZE, tmp.length()-i*BLOCK_SIZE);
+                                else
+                                   memcpy(data_buf, tmp.data()+glo_idx*BLOCK_SIZE, BLOCK_SIZE);
+                                glo_idx++;
+                            }
+                        }
+                        updateIndexBlock_Level1(level2_index_block_buf[i]);
+                    }
+                }
+                updateIndexBlock_Level2(inode_buf[0].i_block[7]);
+            }
+            else {
+                // write (需要一级间接索引)  
+                int glo_idx = 0;
+                for (int i = 0; i < 6; ++i) {
+                    loadDataBlock(inode_buf[0].i_block[i]);
+                    memcpy(data_buf, tmp.data()+glo_idx*BLOCK_SIZE, BLOCK_SIZE);
+                    updateDataBlock(inode_buf[0].i_block[i]);
+                    ++glo_idx;
+                }
+                loadIndexBlock_Level1(inode_buf[0].i_block[6]);
+                for (int i = 0; i < 32; ++i) {
+                    if (!level1_index_block_buf[i]) {
+                        loadDataBlock(level1_index_block_buf[i]);
+                        if (i == 31 || !level1_index_block_buf[i+1]) {
+                            memcpy(data_buf, tmp.data()+glo_idx*BLOCK_SIZE, tmp.length()-i*BLOCK_SIZE);
+                        }
+                        else {
+                            memcpy(data_buf, tmp.data()+glo_idx*BLOCK_SIZE, BLOCK_SIZE);
+                        }
+                        updateDataBlock(level1_index_block_buf[i]);
+                        ++glo_idx;
+                    }
+                }
+                updateIndexBlock_Level1(inode_buf[0].i_block[6]);
+            }
+        }
+        else {
+            // alloc
+            inode_buf[0].i_blocks = need_block_num;
+            for (int i = 0; i < need_block_num; ++i)
+                inode_buf[0].i_block[i] = allocDataBlock();
+            // write (不需要间接索引)
+            for (int i = 0; i < inode_buf[0].i_blocks; ++i) {
+                loadDataBlock(inode_buf[0].i_block[i]);
+                if (i == inode_buf[0].i_blocks - 1)
+                    memcpy(data_buf, tmp.data()+i*BLOCK_SIZE, tmp.length()-i*BLOCK_SIZE);
+                else    
+                    memcpy(data_buf, tmp.data()+i*BLOCK_SIZE, BLOCK_SIZE);
+                updateDataBlock(inode_buf[0].i_block[i]);
+            }
         }
 
         updateInode(node_idx);
@@ -1005,7 +1191,15 @@ void Ext2::ext2_l_open_file() {
     INFO("\n");
 }
 
-void Ext2::ext2_chmod(char const tar[9], std::string mode) {
+void Ext2::ext2_chmod(char const tar[9]) {
+    INFO("Input the mode you want to change: such as r__, rwx, __x:\n");
+
+    std::string mode;
+
+    std::cin >> mode;
+
+    std::cin.get();
+
     uint16_t output = 0b0000000100000000;
     if (mode.length() > 3)
         ERROR("Mode Input Error!!! Please check your input!!!\n");
