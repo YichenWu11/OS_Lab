@@ -109,7 +109,9 @@ With_ThreadPool_Func
 
 ## Part 3 遇到的问题
 
-线程池实现中为了确保函数对象的唯一性, 引入了 [Naops/function2](https://github.com/Naios/function2).
+引入了 [Naios/function2](https://github.com/Naios/function2), 解决使用 `std::function<void()>` 时出现的
+
+<img src="./images/ctp/err.png">
 
 ---
 

@@ -1,10 +1,11 @@
 #pragma once
 
-#include "./function2/function2.hpp"
 #include <vector>
 #include <thread>
 #include <future>
 #include <queue>
+
+#include "./function2/function2.hpp"
 
 namespace Chen {
     class ThreadPool {
@@ -17,6 +18,7 @@ namespace Chen {
         auto ReturnSubmit(F&& f, Args&&... args);
 
         void BasicSubmit(fu2::unique_function<void()> task);
+        // void BasicSubmit(std::function<void()> task);
 
     private:
         std::vector<std::thread> workers;

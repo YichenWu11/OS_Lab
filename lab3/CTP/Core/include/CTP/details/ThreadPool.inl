@@ -9,6 +9,7 @@ namespace Chen {
 
         std::future<return_type> rst = barrier.get_future();
 
+        // Here
         BasicSubmit([f = std::forward<F>(f), barrier = std::move(barrier), ... args = std::forward<Args>(args)]() mutable {
             if constexpr (std::is_void_v<return_type>) {
                 std::invoke(std::forward<F>(f), std::forward<Args>(args)...);

@@ -27,7 +27,7 @@ void ThreadPool::BasicSubmit(fu2::unique_function<void()> task) {
         std::lock_guard<std::mutex> lock(mutex_tasks);
 
         if (stop)
-            throw std::runtime_error("enqueue on stopped ThreadPool");
+            throw std::runtime_error("submit on stopped ThreadPool");
 
         tasks.push(std::move(task));
     }
