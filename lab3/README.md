@@ -113,9 +113,9 @@ With_ThreadPool_Func
 
 <img src="./images/ctp/err.png">
 
-上网查阅:
+Search in StackOverflow, [capture-stdpromise-in-a-lambda-c14](https://stackoverflow.com/questions/33436336/capture-stdpromise-in-a-lambda-c14)
 
-<img src="./images/ctp/ans.png">
+<img src="./images/ctp/ans0.png">
 
 引入了 [Naios/function2](https://github.com/Naios/function2)来解决该问题
 
