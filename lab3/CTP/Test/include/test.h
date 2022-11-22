@@ -9,6 +9,41 @@ using namespace Chen;
 using namespace std;
 using namespace std::chrono;
 
+template<class F, class... Args>
+auto test_func_impl(F&& f, Args&&... args) {
+    using return_type = std::invoke_result_t<F, Args...>;
+
+    std::promise<return_type> barrier;
+
+    std::future<return_type> rst = barrier.get_future();
+
+    if constexpr (std::is_void_v<return_type>) {
+        std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+        barrier.set_value();
+    }
+    else
+        barrier.set_value(std::invoke(std::forward<F>(f), std::forward<Args>(args)...));
+
+    return rst;
+}
+
+void test_func() {
+    int res = 0;
+    auto res0 = test_func_impl([&](int i) { std::cout << res + i << std::endl; return 0; }, 10);
+    auto res1 = test_func_impl([&](int i) { std::cout << res + i << std::endl; return 1; }, 20);
+    std::cout << "result: " << res0.get() << std::endl;
+    std::cout << "result: " << res1.get() << std::endl;
+}
+
+void error() {
+    std::promise<void> barrier;
+    std::future<void> rst = barrier.get_future();
+
+    fu2::unique_function<void()> task0 = [barrier = std::move(barrier)](){ int i = 0; };
+    // std::function<void()> task1 = [barrier = std::move(barrier)](){ int i = 0; };
+}
+
+
 void test_thread_pool() {
 	ThreadPool pool(4);
 
@@ -20,6 +55,9 @@ void test_thread_pool() {
 
 	std::cout << "result: " << result.get() << std::endl;
     std::cout << "res: " << res << std::endl;
+
+    pool.ReturnSubmit([](int answer) { std::cout << answer << std::endl; }, 2);
+	pool.ReturnSubmit([](int answer) { std::cout << answer << std::endl; }, 4);
 }
 
 class A {

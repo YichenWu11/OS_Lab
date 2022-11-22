@@ -109,9 +109,15 @@ With_ThreadPool_Func
 
 ## Part 3 遇到的问题
 
-引入了 [Naios/function2](https://github.com/Naios/function2), 解决使用 `std::function<void()>` 时出现的
+使用 `std::function<void()>` 时出现
 
 <img src="./images/ctp/err.png">
+
+上网查阅:
+
+<img src="./images/ctp/ans.png">
+
+引入了 [Naios/function2](https://github.com/Naios/function2)来解决该问题
 
 ---
 

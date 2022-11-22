@@ -2,6 +2,8 @@
 
 int main() {
 
+    // test_func();
+
     // test_thread_pool();
 
     test_efficiency_no_threadpool();
