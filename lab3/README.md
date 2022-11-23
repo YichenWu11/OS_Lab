@@ -97,7 +97,7 @@ No_ThreadPool_Func
 
 With_ThreadPool_Func
 
-<img src="./images/ctp/1.png">
+<img src="./images/ctp/xxx.png">
 
 ***Result***
 
