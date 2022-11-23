@@ -15,7 +15,7 @@ namespace Chen {
 
         // return std::future
         template<class F, class... Args>
-        auto ReturnSubmit(F&& f, Args&&... args);
+        auto Submit(F&& f, Args&&... args);
 
         void BasicSubmit(fu2::unique_function<void()> task);
         // void BasicSubmit(std::function<void()> task);
@@ -25,7 +25,7 @@ namespace Chen {
         std::queue<fu2::unique_function<void()>> tasks;
 
         std::mutex mutex_tasks;
-        std::condition_variable condition;
+        std::condition_variable condition;  // use with `std::unique_lock<std::mutex>`
         bool stop{ false };
     };
 }

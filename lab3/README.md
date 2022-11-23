@@ -101,9 +101,12 @@ With_ThreadPool_Func
 
 ***Result***
 
-<img src="./images/ctp/res0.png">
+<img src="./images/ctp/res1.png">
 
-可以看到并行版本的效率提升非常明显.
+可以看到并行版本的效率提升非常明显, 加速比达到了
+$$
+  4.99468 / 0.82381 \approx 5.41
+$$
 
 ---
 

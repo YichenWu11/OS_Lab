@@ -3,6 +3,7 @@
 using namespace Chen;
 
 ThreadPool::ThreadPool(size_t num) {
+    assert(num <= std::thread::hardware_concurrency());
     for (size_t i = 0; i < num; ++i) {
         workers.emplace_back([this] {
             while (true) {

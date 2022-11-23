@@ -1,4 +1,5 @@
-#include "test.h"
+#include <test.h>
+#include <test_func.h>
 
 int main() {
 
