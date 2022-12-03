@@ -12,28 +12,28 @@ void Shell::init() {
 
 void Shell::constructMap() {
     is_init = true;
- 
-    input2command["cd"]     = Command::CD;      // cd xxx
-    input2command["mkdir"]  = Command::MKDIR;   // mkdir xxx
-    input2command["rmr"]    = Command::RMDIR;   // rm -r xxx
-    input2command["rm"]     = Command::RM;      // rm xxx
-    input2command["touch"]  = Command::TOUCH;   // touch xxx
-    input2command["open"]   = Command::OPEN;    // open xxx
-    input2command["close"]  = Command::CLOSE;   // close xxx
-    input2command["read"]   = Command::READ;    // read xxx
-    input2command["write"]  = Command::WRITE;   // write xxx
-    input2command["writea"] = Command::APPEND;  // write -a xxx
-    input2command["ls"]     = Command::LS;      // ls
-    input2command["ll"]     = Command::LL;      // ll
-    input2command["llo"]    = Command::LS_OPEN_FILE;   // ll -o
-    input2command["lld"]    = Command::SHOW_DISK_INFO; // ll -d
 
-    input2command["chmod"]  = Command::CHMOD;   // chmod xxx
+    input2command["cd"] = Command::CD;              // cd xxx
+    input2command["mkdir"] = Command::MKDIR;        // mkdir xxx
+    input2command["rmr"] = Command::RMDIR;          // rm -r xxx
+    input2command["rm"] = Command::RM;              // rm xxx
+    input2command["touch"] = Command::TOUCH;        // touch xxx
+    input2command["open"] = Command::OPEN;          // open xxx
+    input2command["close"] = Command::CLOSE;        // close xxx
+    input2command["read"] = Command::READ;          // read xxx
+    input2command["write"] = Command::WRITE;        // write xxx
+    input2command["writea"] = Command::APPEND;      // write -a xxx
+    input2command["ls"] = Command::LS;              // ls
+    input2command["ll"] = Command::LL;              // ll
+    input2command["llo"] = Command::LS_OPEN_FILE;   // ll -o
+    input2command["lld"] = Command::SHOW_DISK_INFO; // ll -d
 
-    input2command["help"]   = Command::HELP;    // help
-    input2command["clear"]  = Command::CLEAR;   // clear
-    input2command["exit"]   = Command::EXIT;    // exit
-    input2command["quit"]   = Command::EXIT;    // quit
+    input2command["chmod"] = Command::CHMOD; // chmod xxx
+
+    input2command["help"] = Command::HELP;   // help
+    input2command["clear"] = Command::CLEAR; // clear
+    input2command["exit"] = Command::EXIT;   // exit
+    input2command["quit"] = Command::EXIT;   // quit
 }
 
 Pack Shell::inputProcess(std::string input) {
@@ -48,27 +48,26 @@ Pack Shell::inputProcess(std::string input) {
     inputs.push_back(input.substr(0, pos));
 
     assert(inputs.size() <= 3);
-    
+
     std::string process_input;
-    if (inputs.size() == 3) 
-        process_input = inputs[0] + inputs[1].substr(1,1);
+    if (inputs.size() == 3)
+        process_input = inputs[0] + inputs[1].substr(1, 1);
     else if (inputs.size() == 2)
         if (inputs[1][0] == '-')
-            process_input = inputs[0] + inputs[1].substr(1,1);
-        else 
+            process_input = inputs[0] + inputs[1].substr(1, 1);
+        else
             process_input = inputs[0];
     else if (inputs.size() == 1)
         process_input = inputs[0];
 
     Pack res;
 
-    
-
     if (input2command.find(process_input) != input2command.end()) {
-        res.command  = input2command[process_input];
+        res.command = input2command[process_input];
         res.is_valid = true;
         if (inputs.size() == 3) {
-            if (inputs[2].length() <= 9) strncpy(&(res.target[0]), inputs[2].data(), inputs[2].length());
+            if (inputs[2].length() <= 9)
+                strncpy(&(res.target[0]), inputs[2].data(), inputs[2].length());
             else {
                 res.is_valid = false;
                 ERROR("The max length of name of file/dir is 9!!!\n");
@@ -76,7 +75,8 @@ Pack Shell::inputProcess(std::string input) {
         }
         else if (inputs.size() == 2)
             if (inputs[1][0] != '-') {
-                if (inputs[1].length() <= 9) strncpy(&(res.target[0]), inputs[1].data(), inputs[1].length());
+                if (inputs[1].length() <= 9)
+                    strncpy(&(res.target[0]), inputs[1].data(), inputs[1].length());
                 else {
                     res.is_valid = false;
                     ERROR("The max length of name of file/dir is 9!!!\n");
@@ -87,8 +87,6 @@ Pack Shell::inputProcess(std::string input) {
         res.is_valid = false;
     }
 
-    
-    
     return res;
 }
 
@@ -129,64 +127,63 @@ void Shell::run() {
             continue;
         }
 
-        switch (res.command) 
-        {
-            case Command::CD:
-                Ext2::GetInstance().ext2_cd(res.target);
-                break;
-            case Command::MKDIR:
-                Ext2::GetInstance().ext2_mkdir(res.target);
-                break;            
-            case Command::RMDIR:
-                Ext2::GetInstance().ext2_rmdir(res.target);
-                break;
-            case Command::RM:
-                Ext2::GetInstance().ext2_rm(res.target);
-                break;
-            case Command::TOUCH:
-                Ext2::GetInstance().ext2_touch(res.target);
-                break;
-            case Command::OPEN:
-                Ext2::GetInstance().ext2_open(res.target);
-                break;
-            case Command::CLOSE:
-                Ext2::GetInstance().ext2_close(res.target);
-                break;
-            case Command::READ:
-                Ext2::GetInstance().ext2_read(res.target);
-                break;
-            case Command::WRITE:
-                Ext2::GetInstance().ext2_write(res.target);
-                break;
-            case Command::APPEND:
-                Ext2::GetInstance().ext2_append(res.target);
-                break;
-            case Command::LS:
-                Ext2::GetInstance().ext2_ls();
-                break;
-            case Command::LL:
-                Ext2::GetInstance().ext2_ll();
-                break;
-            case Command::LS_OPEN_FILE:
-                Ext2::GetInstance().ext2_l_open_file();
-                break;
-            case Command::CHMOD:
-                Ext2::GetInstance().ext2_chmod(res.target);
-                break;
-            case Command::SHOW_DISK_INFO:
-                Ext2::GetInstance().showDiskInfo();
-                break;
-            case Command::HELP:
-                help();
-                break;
-            case Command::CLEAR:
-                system("clear");
-                break;     
-            case Command::EXIT:
-                exit(0);
-                break;  
-            default:
-                break;
+        switch (res.command) {
+        case Command::CD:
+            Ext2::GetInstance().ext2_cd(res.target);
+            break;
+        case Command::MKDIR:
+            Ext2::GetInstance().ext2_mkdir(res.target);
+            break;
+        case Command::RMDIR:
+            Ext2::GetInstance().ext2_rmdir(res.target);
+            break;
+        case Command::RM:
+            Ext2::GetInstance().ext2_rm(res.target);
+            break;
+        case Command::TOUCH:
+            Ext2::GetInstance().ext2_touch(res.target);
+            break;
+        case Command::OPEN:
+            Ext2::GetInstance().ext2_open(res.target);
+            break;
+        case Command::CLOSE:
+            Ext2::GetInstance().ext2_close(res.target);
+            break;
+        case Command::READ:
+            Ext2::GetInstance().ext2_read(res.target);
+            break;
+        case Command::WRITE:
+            Ext2::GetInstance().ext2_write(res.target);
+            break;
+        case Command::APPEND:
+            Ext2::GetInstance().ext2_append(res.target);
+            break;
+        case Command::LS:
+            Ext2::GetInstance().ext2_ls();
+            break;
+        case Command::LL:
+            Ext2::GetInstance().ext2_ll();
+            break;
+        case Command::LS_OPEN_FILE:
+            Ext2::GetInstance().ext2_l_open_file();
+            break;
+        case Command::CHMOD:
+            Ext2::GetInstance().ext2_chmod(res.target);
+            break;
+        case Command::SHOW_DISK_INFO:
+            Ext2::GetInstance().showDiskInfo();
+            break;
+        case Command::HELP:
+            help();
+            break;
+        case Command::CLEAR:
+            system("clear");
+            break;
+        case Command::EXIT:
+            exit(0);
+            break;
+        default:
+            break;
         }
     }
 }
